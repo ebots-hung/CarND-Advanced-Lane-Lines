@@ -6,6 +6,7 @@
 
 import os
 import cv2
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import Camera_Calibration, Image_Undistortion
@@ -23,5 +24,14 @@ if __name__ == '__main__':
 
     undist_img, newmtx = Image_Undistortion(mtx, dist, camera_cal_folderpath, test_image, dump_image_folderpath)
 
-    # print(mtx)
-    # print(newmtx)
+    calib_data = {}
+    # calib_data["Rot"] = rvecs
+    # calib_data["Trans"] = tvecs
+    calib_data["mtx"] = newmtx
+    calib_data["dist"] = dist
+    currentfolderpath = os.path.abspath(os.getcwd())
+    filetowrite = os.path.join(currentfolderpath, dump_image_folderpath, "camcalibration.ini")
+ 
+    with open( filetowrite, "w" ) as file: 
+        for key, value in calib_data.items(): 
+            file.write('%s = %s\n' % (key, value))
