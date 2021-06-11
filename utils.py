@@ -70,6 +70,7 @@ def Image_Undistortion(mtx, dist, imagepath, imagename, output_folder):
     img = cv2.imread(imgfullpath)
     newmtx = mtx
     undistorted_img = cv2.undistort(img, mtx, dist, None, newmtx)
-    cv2.imwrite(os.path.join(outputsavefolder, 'undistorted_image.jpg'), undistorted_img)
+    combineimg = cv2.hconcat([img, undistorted_img])
+    cv2.imwrite(os.path.join(outputsavefolder, 'undistorted_image.jpg'), combineimg)
     return undistorted_img, newmtx
     
