@@ -7,8 +7,10 @@
 import os
 import cv2
 import glob
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image as PILImage
 
 # @function name:           Camera_Calibration
 # @function description:    Do camera calibration with object points and image points
@@ -71,32 +73,31 @@ def Camera_Calibration(camera_cal_folder, output_folder, debugflag = False):
 # @function description:    Do image undistortion, combine the test image with undistorqued image, then save to outputfolder
 # @param:                   mtx, dist, imagepath, imagename, output_folder
 # @ret:                     undistorted_img, newmtx
-def Image_Undistortion(mtx, dist, imagepath, imagename, output_folder, index, imgcombine = True): 
+def Image_Undistortion(mtx, dist, img, output_folder, index, imgcombine = True): 
     # get cwd
-    currentfolderpath = os.path.abspath(os.getcwd())
-    imgfullpath = os.path.join(currentfolderpath, imagepath, imagename)
-    outputsavefolder = os.path.join(currentfolderpath,output_folder)
-    img = cv2.imread(imgfullpath)
+    # currentfolderpath = os.path.abspath(os.getcwd())
+    # imgfullpath = os.path.join(currentfolderpath, imagepath, imagename)
+    # outputsavefolder = os.path.join(currentfolderpath,output_folder)
+    # img = cv2.imread(imgfullpath)
     newmtx = mtx
     undistorted_img = cv2.undistort(img, mtx, dist, None, newmtx)
     if imgcombine == True:
         combineimg = cv2.hconcat([img, undistorted_img])
     else: 
         combineimg = undistorted_img
-    cv2.imwrite(os.path.join(outputsavefolder, f'undistorted_image{index}.jpg'), combineimg)
+    cv2.imwrite(os.path.join(output_folder, f'undistorted_image{index}.jpg'), combineimg)
     return undistorted_img, newmtx
     
 # @function name:           PerspectiveTransform_unwarp
 # @function description:    Do perspective transform and unwarp the input image
 # @param:                   image, src, dst (define source and destination points for transform)
 # @ret:                     warped, M, M_inv
-def PerspectiveTransform_unwarp(image, src, dst):
-    h,w = image.shape[:2]
+def PerspectiveTransform_unwarp(iimg, src, dst, hw):
     # use cv2.getPerspectiveTransform() to get M, the transform matrix, and inv(M), the inverse
     M = cv2.getPerspectiveTransform(src, dst)
     M_inv = cv2.getPerspectiveTransform(dst, src)
     # use cv2.warpPerspective() to warp your image to a top-down view
-    warped = cv2.warpPerspective(image, M, (w,h), flags=cv2.INTER_LINEAR)
+    warped = cv2.warpPerspective(iimg, M, (hw[1],hw[0]), flags=cv2.INTER_LINEAR)
     return warped, M, M_inv
 
 # @function name:           abs_sobel_thresh
@@ -194,9 +195,9 @@ def lab_bthresh(img, thresh=(190,255)):
     # Return a binary image of threshold result
     return binary_output    
 
-# @function name:           sliding_window_polyfit
+# @function name:           advlaneline_sliding_window_polyfit
 # @function description:    Define method to fit polynomial to binary image with lines extracted, using sliding window
-def sliding_window_polyfit(img):
+def advlaneline_sliding_window_polyfit(img):
     # Take a histogram of the bottom half of the image
     histogram = np.sum(img[img.shape[0]//2:,:], axis=0)
     # Find the peak of the left and right halves of the histogram
@@ -211,7 +212,7 @@ def sliding_window_polyfit(img):
     #print('base pts:', leftx_base, rightx_base)
 
     # Choose the number of sliding windows
-    nwindows = 10
+    nwindows = 15
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
     # Identify the x and y positions of all nonzero pixels in the image
@@ -274,10 +275,10 @@ def sliding_window_polyfit(img):
     
     return left_fit, right_fit, left_lane_inds, right_lane_inds, visualization_data    
 
-# @function name:           sliding_window_polyfit
+# @function name:           advlaneline_polyfit_using_prev_fit
 # @function description:    Define method to fit polynomial to binary image based upon a previous fit (chronologically speaking);
 #                           this assumes that the fit will not change significantly from one video frame to the next
-def polyfit_using_prev_fit(binary_warped, left_fit_prev, right_fit_prev):
+def advlaneline_polyfit_using_prev_fit(binary_warped, left_fit_prev, right_fit_prev):
     nonzero = binary_warped.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
@@ -394,34 +395,63 @@ def draw_data(original_img, curv_rad, center_dist):
     cv2.putText(new_img, text, (40,120), font, 1.5, (200,255,155), 2, cv2.LINE_AA)
     return new_img
 
-# @function name:           pipeline
-# @function description:    Define the complete image processing pipeline, reads raw image and returns binary image with lane lines identified
-def pipeline(img):
+# @function name:           image_pipeline
+# @function description:    Define the complete image processing pipeline, read raw image and return binary image with lane lines identified
+def image_pipeline(method, mtx, dist, index, dump_image_folderpath, img, debug_folder, debug_flag = False): 
     # Undistort
-    img_undistort = undistort(img)
-    
+    img_undistort,__ = Image_Undistortion(mtx, dist, img, dump_image_folderpath, index, False)  
+
+    srcpts = np.float32([(575,464),
+                  (707,464), 
+                  (258,682), 
+                  (1049,682)])
+    dstpts = np.float32([(450,0),
+                  (830,0),
+                  (450,720),
+                  (830,720)])
     # Perspective Transform
-    img_unwarp, M, Minv = unwarp(img_undistort, src, dst)
+    img_unwarp, M, Minv = PerspectiveTransform_unwarp(img_undistort, srcpts, dstpts, img_undistort.shape)
+    cv2.imwrite(os.path.join(debug_folder,f'unwarped_pipeline{index}.jpg'), img_unwarp)
 
-    # Sobel Absolute (using default parameters)
-    #img_sobelAbs = abs_sobel_thresh(img_unwarp)
-
-    # Sobel Magnitude (using default parameters)
-    #img_sobelMag = mag_thresh(img_unwarp)
-    
-    # Sobel Direction (using default parameters)
-    #img_sobelDir = dir_thresh(img_unwarp)
-    
-    # HLS S-channel Threshold (using default parameters)
-    #img_SThresh = hls_sthresh(img_unwarp)
-
-    # HLS L-channel Threshold (using default parameters)
-    img_LThresh = hls_lthresh(img_unwarp)
-
-    # Lab B-channel Threshold (using default parameters)
-    img_BThresh = lab_bthresh(img_unwarp)
-    
-    # Combine HLS and Lab B channel thresholds
-    combined = np.zeros_like(img_BThresh)
-    combined[(img_LThresh == 1) | (img_BThresh == 1)] = 1
+    if method == ("Sobel_Absolute"): 
+        # Sobel Absolute (using default parameters)
+        # print("Sobel_Absolute")
+        img_sobelAbs = abs_sobel_thresh(img_unwarp)
+        combined = img_sobelAbs
+    elif method == ("Sobel_Magnitude"): 
+        # Sobel Magnitude (using default parameters)
+        img_sobelMag = mag_thresh(img_unwarp)
+        combined = img_sobelMag
+    elif method == ("Sobel_Direction"):         
+        # Sobel Direction (using default parameters)
+        img_sobelDir = dir_thresh(img_unwarp)
+        combined = img_sobelDir
+    elif method == ("Sobel_MagDir"): 
+        img_sobelMag = mag_thresh(img_unwarp)
+        img_sobelDir = dir_thresh(img_unwarp)
+        combined = np.zeros_like(img_sobelMag)
+        combined[(img_sobelMag == 1) | (img_sobelDir == 1)] = 1
+    elif method == ("HLS_S_channel"):         
+        # HLS S-channel Threshold (using default parameters)
+        img_SThresh = hls_sthresh(img_unwarp)
+        combined = img_SThresh
+    elif method == ("HLS_L_channel"):
+        # HLS L-channel Threshold (using default parameters)
+        img_LThresh = hls_lthresh(img_unwarp)
+        combined = img_LThresh
+        # cv2.imwrite(os.path.join(debug_folder,f'img_LThresh{index}.jpg'), np.multiply(img_LThresh,255))
+    elif method == ("LAB_B_channel"):
+        # Lab B-channel Threshold (using default parameters)
+        img_BThresh = lab_bthresh(img_unwarp)
+        combined = img_BThresh
+    elif method == ("HLSCombine"):    
+        # Combine HLS and Lab B channel thresholds
+        # print("HLSCombine")
+        img_LThresh = hls_lthresh(img_unwarp)
+        img_BThresh = lab_bthresh(img_unwarp)
+        combined = np.zeros_like(img_BThresh)
+        combined[(img_LThresh == 1) | (img_BThresh == 1)] = 1
+    # Debug: write grayscale images into jpg files
+    grayscale_img = np.multiply(combined, 255)
+    cv2.imwrite(os.path.join(debug_folder,f'grayscale_img{index}.jpg'), grayscale_img)
     return combined, Minv
