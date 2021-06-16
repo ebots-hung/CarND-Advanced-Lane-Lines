@@ -6,11 +6,10 @@
 
 import os
 import cv2
-import json
 import glob
 import numpy as np
-import matplotlib.pyplot as plt
-from AdvLaneline_utils import Camera_Calibration, Image_Undistortion, PerspectiveTransform_unwarp, image_pipeline, advlaneline_sliding_window_polyfit, advlaneline_polyfit_using_prev_fit
+
+from AdvLaneline_utils import Camera_Calibration, Image_Undistortion, PerspectiveTransform_unwarp, image_pipeline, advlaneline_sliding_window_polyfit, advlaneline_polyfit_using_prev_fit, measure_curvature_distance, laneline_plot
 
 
 #camera cal folder is at same level with test_CameraCalibration.py, utils.py
@@ -39,11 +38,12 @@ if __name__ == '__main__':
  
     with open( filetowrite, "w" ) as file: 
         for key, value in calib_data.items(): 
-            file.write('%s = %s\n' % (key, value))
+            # print(dist)
+            file.write('%s=\n%s\n' % (key, value))
 
     # [3]: test image with perspective transform and unwarp
     test_image_folderpath = "test_images"
-    undistorted_input_image = cv2.imread(os.path.join(currentfolderpath, test_image_folderpath, "test1.jpg"))
+    undistorted_input_image = cv2.imread(os.path.join(currentfolderpath, test_image_folderpath, "test2.jpg"))
     undist_img,__ = Image_Undistortion(mtx, dist, undistorted_input_image, dump_image_folderpath, 1, False)
 
     # srcpts = np.float32([(550, 460),    # top-left
@@ -55,14 +55,15 @@ if __name__ == '__main__':
     #                 (1100, 720),
     #                 (1100, 0)])   
     
-    srcpts = np.float32([(575,464),
-                  (707,464), 
-                  (258,682), 
-                  (1049,682)])
+
+    srcpts = np.float32([(580,466),
+                  (707,466), 
+                  (259,683), 
+                  (1050,683)])
     dstpts = np.float32([(450,0),
                   (830,0),
                   (450,720),
-                  (830,720)])       
+                  (830,720)])     
     hw = undist_img.shape
     # print(hw)
     exampleImg_unwarp, M, Minv = PerspectiveTransform_unwarp(undist_img, srcpts, dstpts, hw)
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     
 
     # [5]: run test for sliding window polyfit
-    img_test_file = os.path.join(currentfolderpath, dump_image_folderpath, 'pipeline_img6.jpg')
+    img_test_file = os.path.join(currentfolderpath, dump_image_folderpath, 'pipeline_img3.jpg')
     iimg0 = cv2.imread(img_test_file, cv2.IMREAD_GRAYSCALE)
     # print(type(iimg0),iimg0)
     lfit, rfit, llane_inds, rlane_inds, visualization_data = advlaneline_sliding_window_polyfit(iimg0)
@@ -112,7 +113,12 @@ if __name__ == '__main__':
         oimg1[np.int32(y), rpixelx] = [255, 255, 0]
         # print(lpixelx, rpixelx, np.int32(y))
     cv2.imwrite(os.path.join(currentfolderpath, dump_image_folderpath, 'test_advlaneline_sliding_window_polyfit.jpg'),oimg1)
+    print(lfit)
+    print(rfit)
+    print(len(llane_inds))
+    print(rlane_inds)
 
-
-    # [6]: run test for sliding window polyfit based on previous fit
-    lfit_new, rfit_new, llane_inds, rlane_inds = advlaneline_polyfit_using_prev_fit(iimg0, lfit, rfit)
+    # [6]: run test for radius/curvature calc and laneline_plot function
+    lR, rR, pos = measure_curvature_distance(iimg0, lfit, rfit, llane_inds, rlane_inds)
+    result_img = laneline_plot(undistorted_input_image, iimg0, lfit, rfit, Minv, (lR+rR)/2, pos)
+    cv2.imwrite(os.path.join(currentfolderpath, dump_image_folderpath, 'lanelinedetection.jpg'),result_img)
