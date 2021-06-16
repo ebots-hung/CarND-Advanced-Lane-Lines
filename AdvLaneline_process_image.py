@@ -39,6 +39,7 @@ def process_image(img):
         l_lane_inds_bestfit = l_lane_inds
         r_lane_inds_bestfit = r_lane_inds
         stored_img = img_bin
+
    
     # draw the current best fit if it exists
     if l_bestfit is not None and r_bestfit is not None:
