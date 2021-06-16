@@ -24,7 +24,7 @@ if __name__ == '__main__':
     currentfolderpath = os.path.abspath(os.getcwd())
     filetoread = os.path.join(currentfolderpath, dump_image_folderpath, "camcalibration.ini")
     settings.read_calibration_file(filetoread)
-    video_input1 = VideoFileClip('challenge_video.mp4')#.subclip(22,26)
-    video_output1 = 'challenge_video_output.mp4'
+    video_input1 = VideoFileClip('project_video.mp4')#.subclip(22,26)
+    video_output1 = 'project_video_output.mp4'
     processed_video = video_input1.fl_image(process_image)
     processed_video.write_videofile(video_output1, audio=False)

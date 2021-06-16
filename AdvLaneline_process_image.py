@@ -8,20 +8,19 @@ from AdvLanelinefit import *
 # @function name:           process_image
 # @function description:    Define Complete Image Processing Pipeline
 def process_image(img):
-    global l_bestfit
-    global r_bestfit
-    global l_lane_inds_bestfit
-    global r_lane_inds_bestfit   
-    global l_fit
-    global r_fit
-    global l_lane_inds
-    global r_lane_inds
-    global stored_img
+    global l_line
+    global r_line
     new_img = np.copy(img)
     img_bin, Minv = image_pipeline("HLSCombine", settings.mtx, settings.dist, 0, os.path.join(os.path.abspath(os.getcwd()), 'output_images'), new_img, os.path.join(os.path.abspath(os.getcwd()), 'debug_folder'))
+    l_line = AdvLanelinefit()
+    r_line = AdvLanelinefit()
 
-    l_fit, r_fit, l_lane_inds, r_lane_inds, _ = advlaneline_sliding_window_polyfit(img_bin)
-
+    # if both left and right lines were detected last frame, use polyfit_using_prev_fit, otherwise use sliding window
+    if not l_line.detected or not r_line.detected:
+        l_fit, r_fit, l_lane_inds, r_lane_inds, _ = advlaneline_sliding_window_polyfit(img_bin)
+    else:
+        l_fit, r_fit, l_lane_inds, r_lane_inds = advlaneline_polyfit_using_prev_fit(img_bin, l_line.best_fit, r_line.best_fit)
+        
     if l_fit is not None and r_fit is not None:
         # calculate x-intercept (bottom of image, x=image_height) for fits
         h = img.shape[0]
@@ -31,20 +30,14 @@ def process_image(img):
         if abs(350 - x_int_diff) > 100:
             l_fit = None
             r_fit = None
-
-    #stored for best fit
-    if l_fit is not None and r_fit is not None:    
-        l_bestfit = l_fit
-        r_bestfit = r_fit
-        l_lane_inds_bestfit = l_lane_inds
-        r_lane_inds_bestfit = r_lane_inds
-        stored_img = img_bin
-
-   
+            
+    l_line.add_fit(l_fit, l_lane_inds)
+    r_line.add_fit(r_fit, r_lane_inds)
+    
     # draw the current best fit if it exists
-    if l_bestfit is not None and r_bestfit is not None:
-        rad_l, rad_r, d_center = measure_curvature_distance(stored_img, l_bestfit, r_bestfit, l_lane_inds_bestfit, r_lane_inds_bestfit)
-        img_out = laneline_plot(new_img, img_bin, l_bestfit, r_bestfit, Minv, (rad_l+rad_r)/2, d_center)
+    if l_line.best_fit is not None and r_line.best_fit is not None:
+        rad_l, rad_r, d_center = measure_curvature_distance(img_bin, l_line.best_fit, l_line.best_fit, l_lane_inds, r_lane_inds)
+        img_out = laneline_plot(new_img, img_bin, l_fit, r_fit, Minv, (rad_l+rad_r)/2, d_center)
     else:
         img_out = new_img
         

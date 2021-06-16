@@ -31,10 +31,9 @@ class AdvLanelinefit():
                 # if we have a best fit, see how this new fit compares
                 self.diffs = abs(fit-self.best_fit)
             if (self.diffs[0] > 0.001 or \
-               self.diffs[1] > 1.0 or \
-               self.diffs[2] > 100.) and \
-               len(self.current_fit) > 0:
-                # bad fit! abort! abort! ... well, unless there are no fits in the current_fit queue, then we'll take it
+                self.diffs[1] > 1.0 or \
+                self.diffs[2] > 100.) and \
+                len(self.current_fit) > 0:
                 self.detected = False
             else:
                 self.detected = True
