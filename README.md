@@ -125,6 +125,6 @@ Here's a [link to my video result](./project_video.mp4)
 
 ### Discussion
 
-#### 1. Open points
+#### Open points
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+The algorithm works quite well with project_video input, when the road images including lane lines appear pretty clearly, good contrast between asphalt surface and lane lines. However it was a bit more challenge for challenge_video for which the image's feature was a bit blur and road surface has many different zones (dark/bright) caused a lot of discripancies. My current implementation has all parameters fixed, it really lacks of adaptability to deal with broader range of light intensity/contrast ..etc.   
