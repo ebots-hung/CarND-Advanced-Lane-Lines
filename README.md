@@ -14,7 +14,7 @@ The goals / steps of this project are the following:
 
 
 [//]: # (Image References)
-
+[image0]: ./output_images/output_image7.jpg "Calibration"
 [image1]: ./output_images/undistorted_imagex0.jpg "Undistorted"
 [image2]: ./output_images/unwarped_image.jpg "Road Transformed"
 [image3]: ./output_images/pipeline_img8.jpg "Binary Example"
@@ -53,6 +53,7 @@ Calibration function requires the inputs of checkboard images captured in differ
 
 Calibration function is tested by 'AdvLaneline_moduletest.py', finally calibration parameters (e.g. camera matrix and distortion) is stored into ./output_images/camcalibration.ini
 
+![alt text][image0]
 ![alt text][image1]
 
 ### Pipeline (single images)
