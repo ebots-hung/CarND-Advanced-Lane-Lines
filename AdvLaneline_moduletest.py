@@ -44,7 +44,7 @@ if __name__ == '__main__':
     # [3]: test image with perspective transform and unwarp
     test_image_folderpath = "test_images"
     undistorted_input_image = cv2.imread(os.path.join(currentfolderpath, test_image_folderpath, "test2.jpg"))
-    undist_img,__ = Image_Undistortion(mtx, dist, undistorted_input_image, dump_image_folderpath, 1, False)
+    undist_img,__ = Image_Undistortion(mtx, dist, undistorted_input_image, dump_image_folderpath, 'x1', True)
 
     # srcpts = np.float32([(550, 460),    # top-left
     #                 (150, 720),         # bottom-left
