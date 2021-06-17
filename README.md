@@ -121,7 +121,9 @@ Refer to a function called `laneline_plot` from module `AdvLaneline_utils.py` to
 
 Here's a [link to my video result](./project_video.mp4)
 
----
+### Run video processing pipeline
+```bash
+python AdvLaneline_main.py <inputvideo> <outputvideo>
 
 ### Discussion
 
