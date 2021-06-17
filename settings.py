@@ -1,6 +1,25 @@
 import numpy as np
 
-
+def init(img): 
+    global l_bestfit
+    global r_bestfit
+    global l_lane_inds_bestfit
+    global r_lane_inds_bestfit   
+    global l_fit
+    global r_fit
+    global l_lane_inds
+    global r_lane_inds
+    global stored_img
+    l_bestfit               = np.polyfit([1,2,3], [1,2,3], 2)
+    r_bestfit               = np.polyfit([1,2,3], [1,2,3], 2)
+    l_lane_inds_bestfit     = []
+    r_lane_inds_bestfit     = []
+    l_fit                   = np.polyfit([1,2,3], [1,2,3], 2)
+    r_fit                   = np.polyfit([1,2,3], [1,2,3], 2)
+    l_lane_inds             = []
+    r_lane_inds             = []
+    stored_img              = np.copy(img)
+    # print(stored_img.shape[0])
 
 def read_calibration_file(file):
     global mtx

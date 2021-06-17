@@ -54,21 +54,47 @@ if __name__ == '__main__':
     #                 (100, 720),
     #                 (1100, 720),
     #                 (1100, 0)])   
-    
-
-    srcpts = np.float32([(580,466),
-                  (707,466), 
-                  (259,683), 
-                  (1050,683)])
-    dstpts = np.float32([(450,0),
-                  (830,0),
-                  (450,720),
-                  (830,720)])     
+    offset = 450
     hw = undist_img.shape
+    # print(hw)
+    # srcpts = np.float32(
+    #     [[(hw[1] / 2) - 55, hw[0] / 2 + 100],
+    #     [((hw[1] / 6) - 10), hw[0]],
+    #     [(hw[1] * 5 / 6) + 60, hw[0]],
+    #     [(hw[1] / 2 + 55), hw[0] / 2 + 100]])
+    # dstpts = np.float32(
+    #     [[(hw[1] / 4), 0],
+    #     [(hw[1] / 4), hw[0]],
+    #     [(hw[1] * 3 / 4), hw[0]],
+    #     [(hw[1] * 3 / 4), 0]])
+
+    # srcpts = np.float32([(570,450),     # top-left
+    #               (707,450),            # top-right
+    #               (259,683),            # bottom-left
+    #               (1200,683)])          # bottom-right
+    # dstpts = np.float32([(450,0),
+    #               (830,0),
+    #               (450,720),
+    #               (830,720)])   
+
+    srcpts = np.float32([(580,466),     # top-left
+                  (707,466),            # top-right
+                  (259,683),            # bottom-left
+                  (1050,683)])          # bottom-right
+    # dstpts = np.float32([(450,0),
+    #               (830,0),
+    #               (450,720),
+    #               (830,720)]) 
+    dstpts = np.float32([
+        (offset, 0),                    # top-left corner
+        (hw[1]-offset, 0),              # top-right corner            
+        (offset, hw[0]),                # bottom-left corner
+        (hw[1]-offset, hw[0])           # bottom-right corner
+    ])               
     # print(hw)
     exampleImg_unwarp, M, Minv = PerspectiveTransform_unwarp(undist_img, srcpts, dstpts, hw)
     cv2.imwrite(os.path.join(currentfolderpath, dump_image_folderpath, "unwarped_image.jpg"), exampleImg_unwarp)
-    pts = np.array([[258,682],[575,464],[727,464],[1089,682]], np.int32)
+    pts = np.array([[259,683],[570,450],[707,450],[1200,683]], np.int32)
     pts = pts.reshape((-1, 1, 2))  
     undist_img_polylines = cv2.polylines(undist_img, [pts], True, (0,0,255), 3)
     cv2.imwrite(os.path.join(currentfolderpath, dump_image_folderpath, "polylines_image.jpg"), undist_img_polylines)
@@ -84,10 +110,12 @@ if __name__ == '__main__':
             cv2.imwrite(os.path.join(debug_folder,f'debug{idx}.jpg'), iimg2)
         oimg, Minv = image_pipeline("HLSCombine", mtx, dist, idx, os.path.join(currentfolderpath, dump_image_folderpath), iimg1, debug_folder)
         cv2.imwrite(os.path.join(output_image_folder, f'pipeline_img{idx}.jpg'), np.multiply(oimg,255))
+        warped_image, _, _ = PerspectiveTransform_unwarp(oimg, dstpts, srcpts, hw)
+        cv2.imwrite(os.path.join(output_image_folder, f'warped_img{idx}.jpg'), np.multiply(warped_image,255))
     
 
     # [5]: run test for sliding window polyfit
-    img_test_file = os.path.join(currentfolderpath, dump_image_folderpath, 'pipeline_img3.jpg')
+    img_test_file = os.path.join(currentfolderpath, dump_image_folderpath, 'pipeline_img8.jpg')
     iimg0 = cv2.imread(img_test_file, cv2.IMREAD_GRAYSCALE)
     # print(type(iimg0),iimg0)
     lfit, rfit, llane_inds, rlane_inds, visualization_data = advlaneline_sliding_window_polyfit(iimg0)
@@ -113,10 +141,10 @@ if __name__ == '__main__':
         oimg1[np.int32(y), rpixelx] = [255, 255, 0]
         # print(lpixelx, rpixelx, np.int32(y))
     cv2.imwrite(os.path.join(currentfolderpath, dump_image_folderpath, 'test_advlaneline_sliding_window_polyfit.jpg'),oimg1)
-    print(lfit)
-    print(rfit)
-    print(len(llane_inds))
-    print(rlane_inds)
+    # print(lfit)
+    # print(rfit)
+    # print(len(llane_inds))
+    # print(rlane_inds)
 
     # [6]: run test for radius/curvature calc and laneline_plot function
     lR, rR, pos = measure_curvature_distance(iimg0, lfit, rfit, llane_inds, rlane_inds)

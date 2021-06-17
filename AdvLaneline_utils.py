@@ -398,7 +398,7 @@ def laneline_plot(original_img, binary_img, l_fit, r_fit, Minv, curv_rad, center
         value = r_fit[0]
     # print(value, l_fit[0], r_fit[0])
     msg = "Keep Straight Ahead"
-    if abs(value) <= 0.000015:
+    if abs(value) <= 0.000045:
         px, py = keep_straight_img[:,:,3].nonzero()    #get straight image - nonzero
         combined_img[px+25, py+450] = keep_straight_img[px, py, :3]
         msg = "Keep Straight Ahead"
@@ -427,15 +427,32 @@ def laneline_plot(original_img, binary_img, l_fit, r_fit, Minv, curv_rad, center
 def image_pipeline(method, mtx, dist, index, dump_image_folderpath, img, debug_folder, debug_flag = False): 
     # Undistort
     img_undistort,__ = Image_Undistortion(mtx, dist, img, dump_image_folderpath, index, False)  
+    
+    offset = 450
+    hw = img_undistort.shape
+    # srcpts = np.float32([(570,450),     # top-left
+    #               (707,450),            # top-right
+    #               (259,683),            # bottom-left
+    #               (1200,683)])          # bottom-right
+    # dstpts = np.float32([(450,0),
+    #               (830,0),
+    #               (450,720),
+    #               (830,720)])   
 
-    srcpts = np.float32([(580,466),
-                  (707,466), 
-                  (259,683), 
-                  (1050,683)])
-    dstpts = np.float32([(450,0),
-                  (830,0),
-                  (450,720),
-                  (830,720)])
+    srcpts = np.float32([(580,466),     # top-left
+                  (707,466),            # top-right
+                  (259,683),            # bottom-left
+                  (1050,683)])          # bottom-right
+    # dstpts = np.float32([(450,0),
+    #               (830,0),
+    #               (450,720),
+    #               (830,720)]) 
+    dstpts = np.float32([
+        (offset, 0),                    # top-left corner
+        (hw[1]-offset, 0),              # top-right corner            
+        (offset, hw[0]),                # bottom-left corner
+        (hw[1]-offset, hw[0])           # bottom-right corner
+    ])        
     # Perspective Transform
     img_unwarp, M, Minv = PerspectiveTransform_unwarp(img_undistort, srcpts, dstpts, img_undistort.shape)
     if debug_flag == True: 
